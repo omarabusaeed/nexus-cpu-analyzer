@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NEXUS - Professional Real-Time CPU Analyzer & Hardware Digital Twin</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Local Chart.js -->
+  <script src="/static/chart.min.js"></script>
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <!-- TOP NAVBAR -->
+  <header class="navbar">
+    <div class="nav-left">
+      <div class="logo-badge">
+        <span class="logo-icon">⚡</span>
+      </div>
+      <div class="logo-details">
+        <div class="brand-title">NEXUS <span class="version-tag">PRO v2.5</span></div>
+        <div class="brand-subtitle">CPU TELEMETRY & HARDWARE DIGITAL TWIN</div>
+      </div>
+    </div>
+
+    <div class="nav-stats">
+      <div class="kpi-mini">
+        <div class="kpi-mini-val" id="nav-cpu">0.0%</div>
+        <div class="kpi-mini-lbl">CPU USAGE</div>
+      </div>
+      <div class="kpi-mini-sep"></div>
+      <div class="kpi-mini">
+        <div class="kpi-mini-val" id="nav-mem">0.0%</div>
+        <div class="kpi-mini-lbl">RAM USAGE</div>
+      </div>
+      <div class="kpi-mini-sep"></div>
+      <div class="kpi-mini">
+        <div class="kpi-mini-val" id="nav-procs">0</div>
+        <div class="kpi-mini-lbl">PROCESSES</div>
+      </div>
+      <div class="kpi-mini-sep"></div>
+      <div class="kpi-mini">
+        <div class="kpi-mini-val" id="nav-uptime">00:00:00</div>
+        <div class="kpi-mini-lbl">UPTIME</div>
+      </div>
+    </div>
+
+    <div class="nav-right">
+      <div class="live-pill">
+        <span class="live-indicator"></span>
+        <span>REAL-TIME</span>
+      </div>
+      <div class="export-dropdown">
+        <button class="btn btn-sm btn-outline" onclick="toggleExportMenu(event)">
+          <span>&#x2B07; Export &#x25BE;</span>
+        </button>
+        <div class="export-menu" id="export-menu">
+          <a href="/api/export-csv" class="export-menu-item">
+            <span class="export-menu-icon">&#x1F4CA;</span>
+            <span>CSV (Excel)</span>
+          </a>
+          <a href="/api/export-json" class="export-menu-item">
+            <span class="export-menu-icon">&#x1F517;</span>
+            <span>JSON (Full Data)</span>
+          </a>
+          <a href="/api/export-pdf-report" class="export-menu-item">
+            <span class="export-menu-icon">&#x1F4C4;</span>
+            <span>PDF Snapshot</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- NAVIGATION TABS -->
+  <nav class="tab-bar">
+    <button class="tab-btn active" data-tab="dashboard">
+      <span class="tab-icon">📊</span>
+      <span>Dashboard</span>
+    </button>
+    <button class="tab-btn" data-tab="countermeasures">
+      <span class="tab-icon">🛡️</span>
+      <span>Countermeasures</span>
+      <span class="badge-count" id="countermeasures-badge" style="display:none;">0</span>
+    </button>
+    <button class="tab-btn" data-tab="hardware-twin">
+      <span class="tab-icon">🖥️</span>
+      <span>Hardware Digital Twin</span>
+    </button>
+    <button class="tab-btn" data-tab="cores">
+      <span class="tab-icon">🧠</span>
+      <span>CPU Cores</span>
+    </button>
+    <button class="tab-btn" data-tab="processes">
+      <span class="tab-icon">⚙️</span>
+      <span>Processes</span>
+    </button>
+    <button class="tab-btn" data-tab="memory">
+      <span class="tab-icon">💾</span>
+      <span>Memory & Storage</span>
+    </button>
+    <button class="tab-btn" data-tab="alerts">
+      <span class="tab-icon">🔔</span>
+      <span>Alerts</span>
+      <span class="badge-count" id="alert-counter" style="display:none;">0</span>
+    </button>
+    <button class="tab-btn" data-tab="history">
+      <span class="tab-icon">📈</span>
+      <span>History & Stats</span>
+    </button>
+    <button class="tab-btn" data-tab="settings">
+      <span class="tab-icon">🛠️</span>
+      <span>Settings & Info</span>
+    </button>
+  </nav>
+
+  <!-- MAIN CONTAINER -->
+  <main class="content-wrapper">
+
+    <!-- ==================== TAB 1: DASHBOARD ==================== -->
+    <section class="tab-content active" id="tab-dashboard">
+      
+      <!-- DYNAMIC COUNTERMEASURE ALERT BANNER -->
+      <div id="hog-alert-banner" class="emergency-banner" style="display: none;">
+        <div class="banner-left">
+          <span class="banner-icon">🚨</span>
+          <div>
+            <div class="banner-heading">Active Background Resource Hog Detected!</div>
+            <div class="banner-desc" id="banner-text">Background process is consuming abnormal CPU load.</div>
+          </div>
+        </div>
+        <div class="banner-actions">
+          <button class="btn btn-sm btn-danger" id="banner-action-btn">
+            <span>🛡️ Inspect & Terminate</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI CARDS GRID -->
+      <div class="grid-cards">
+        <div class="stat-card" id="card-cpu">
+          <div class="card-head">
+            <span class="card-icon icon-cyan">🖥️</span>
+            <span class="card-title">CPU Utilization</span>
+          </div>
+          <div class="card-body">
+            <div class="card-value" id="val-cpu">0.0%</div>
+            <div class="card-sub" id="sub-cpu">Logical Cores: Calculating...</div>
+            <div class="progress-track">
+              <div class="progress-fill fill-cyan" id="bar-cpu" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-card" id="card-mem">
+          <div class="card-head">
+            <span class="card-icon icon-emerald">💾</span>
+            <span class="card-title">Memory (RAM)</span>
+          </div>
+          <div class="card-body">
+            <div class="card-value" id="val-mem">0.0%</div>
+            <div class="card-sub" id="sub-mem">0 GB / 0 GB Used</div>
+            <div class="progress-track">
+              <div class="progress-fill fill-emerald" id="bar-mem" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-card" id="card-score">
+          <div class="card-head">
+            <span class="card-icon icon-purple">🏆</span>
+            <span class="card-title">Health Score</span>
+          </div>
+          <div class="card-body">
+            <div class="card-value" id="val-score">100</div>
+            <div class="card-sub" id="sub-score">Optimal Operating State</div>
+            <div class="progress-track">
+              <div class="progress-fill fill-purple" id="bar-score" style="width: 100%"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-card" id="card-freq">
+          <div class="card-head">
+            <span class="card-icon icon-amber">⚡</span>
+            <span class="card-title">CPU Frequency</span>
+          </div>
+          <div class="card-body">
+            <div class="card-value" id="val-freq">0 MHz</div>
+            <div class="card-sub" id="sub-freq">Base Clock Rating</div>
+            <div class="badge-status status-normal" id="badge-freq">Normal</div>
+          </div>
+        </div>
+
+        <div class="stat-card" id="card-procs">
+          <div class="card-head">
+            <span class="card-icon icon-blue">⚙️</span>
+            <span class="card-title">Active Processes</span>
+          </div>
+          <div class="card-body">
+            <div class="card-value" id="val-procs">0</div>
+            <div class="card-sub">Active OS System Tasks</div>
+            <div class="badge-status status-info">Monitoring</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHARTS SECTION -->
+      <div class="charts-row">
+        <!-- Main Line Chart -->
+        <div class="panel panel-large">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span class="dot-accent"></span>
+              Live CPU & Memory Time Series
+            </div>
+            <div class="panel-actions">
+              <span class="chart-legend-item"><span class="legend-box" style="background:#00f2fe;"></span> CPU %</span>
+              <span class="chart-legend-item"><span class="legend-box" style="background:#10b981;"></span> RAM %</span>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="chart-box">
+              <canvas id="chart-telemetry"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gauge Panel -->
+        <div class="panel panel-gauge">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span class="dot-accent"></span>
+              Overall CPU Load
+            </div>
+          </div>
+          <div class="panel-body flex-center column">
+            <div class="circular-gauge-wrapper">
+              <svg class="circular-gauge" viewBox="0 0 160 160">
+                <circle class="gauge-bg" cx="80" cy="80" r="70"></circle>
+                <circle class="gauge-bar" id="gauge-circle" cx="80" cy="80" r="70" style="stroke-dashoffset: 440;"></circle>
+              </svg>
+              <div class="gauge-center">
+                <span class="gauge-pct" id="gauge-text">0%</span>
+                <span class="gauge-lbl">LOAD</span>
+              </div>
+            </div>
+            <div class="gauge-sub-info" id="gauge-sub">Operating within normal bounds</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECOND CHARTS ROW: NETWORK & DISKS -->
+      <div class="charts-row">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span class="dot-accent"></span>
+              Real-Time Network Throughput
+            </div>
+            <div class="panel-actions">
+              <span class="chart-legend-item"><span class="legend-box" style="background:#38bdf8;"></span> Upload</span>
+              <span class="chart-legend-item"><span class="legend-box" style="background:#a855f7;"></span> Download</span>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="chart-box-sm">
+              <canvas id="chart-network"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span class="dot-accent"></span>
+              Storage Partitions Overview
+            </div>
+          </div>
+          <div class="panel-body">
+            <div id="quick-disk-list" class="quick-disks">
+              <div class="empty-state">Loading storage devices...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: COUNTERMEASURES (SMART HOG TERMINATOR) ==================== -->
+    <section class="tab-content" id="tab-countermeasures">
+      <!-- COUNTERMEASURE DASHBOARD -->
+      <div class="countermeasure-hero">
+        <div class="hero-left">
+          <div class="hero-tag">🛡️ INTELLIGENT SYSTEM GUARDIAN</div>
+          <h2 class="hero-title">Background Rogue Process Analyzer & Countermeasures</h2>
+          <p class="hero-subtitle">
+            Monitors hidden background updaters, telemetry tasks, and resource hogs. Terminate unneeded background processes with 1-click user authorization to cool down CPU and reclaim RAM.
+          </p>
+        </div>
+        <div class="hero-right">
+          <div class="reclaim-card">
+            <div class="reclaim-label">RECLAIMABLE RESOURCES</div>
+            <div class="reclaim-stat-row">
+              <div class="reclaim-item">
+                <span class="reclaim-val text-cyan" id="reclaim-cpu-val">0.0%</span>
+                <span class="reclaim-sub">CPU Load</span>
+              </div>
+              <div class="reclaim-sep"></div>
+              <div class="reclaim-item">
+                <span class="reclaim-val text-emerald" id="reclaim-ram-val">0 MB</span>
+                <span class="reclaim-sub">RAM Memory</span>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-block" id="btn-turbo-boost">
+              <span>🚀 1-Click System Turbo Boost</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- DETECTED HOGS TABLE -->
+      <div class="panel">
+        <div class="panel-header flex-between flex-wrap">
+          <div class="panel-title">
+            <span class="dot-accent"></span>
+            Detected Background Resource Hogs (Pending Authorization)
+          </div>
+          <div class="panel-actions">
+            <button class="btn btn-sm btn-outline" id="btn-refresh-countermeasures">
+              <span>↻ Scan Now</span>
+            </button>
+          </div>
+        </div>
+        <div class="panel-body no-padding">
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 80px;">PID</th>
+                  <th>PROCESS NAME</th>
+                  <th style="width: 200px;">CLASSIFICATION</th>
+                  <th style="width: 140px;">CPU USAGE</th>
+                  <th style="width: 140px;">RAM USE</th>
+                  <th>RECOMMENDATION</th>
+                  <th style="width: 140px; text-align: center;">COUNTERMEASURE</th>
+                </tr>
+              </thead>
+              <tbody id="countermeasures-table-body">
+                <tr><td colspan="7" class="text-center py-4">Scanning active processes for background hogs...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- AUDIT LOG -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span class="dot-accent"></span>
+            Countermeasure Execution Audit Log
+          </div>
+        </div>
+        <div class="panel-body">
+          <div id="countermeasure-audit-list" class="audit-feed">
+            <div class="empty-state">No countermeasures executed in this session.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: HARDWARE DIGITAL TWIN ==================== -->
+    <section class="tab-content" id="tab-hardware-twin">
+      
+      <!-- HERO INFO -->
+      <div class="twin-header-card">
+        <div class="twin-icon">🖥️</div>
+        <div>
+          <h2 class="twin-title" id="twin-cpu-name">Processor Hardware Digital Twin</h2>
+          <div class="twin-subtitle" id="twin-cpu-sub">Mapping OS Software Execution &rarr; Windows Kernel &rarr; Physical Silicon Cores</div>
+        </div>
+      </div>
+
+      <!-- SILICON DIE CHIP SCHEMATIC -->
+      <div class="panel">
+        <div class="panel-header flex-between">
+          <div class="panel-title">
+            <span class="dot-accent"></span>
+            CPU Silicon Die Topology & Dynamic Thermal State
+          </div>
+          <div class="die-legend">
+            <span class="die-legend-item"><span class="legend-dot bg-emerald"></span> Cool (&lt; 40%)</span>
+            <span class="die-legend-item"><span class="legend-dot bg-cyan"></span> Active (40-75%)</span>
+            <span class="die-legend-item"><span class="legend-dot bg-amber"></span> High (75-90%)</span>
+            <span class="die-legend-item"><span class="legend-dot bg-crimson"></span> Critical (&gt; 90%)</span>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="silicon-package">
+            <div class="package-header">
+              <span class="package-title">SILICON DIE (LGA/BGA PACKAGE)</span>
+              <span class="package-cache" id="twin-cache-info">Shared L3 Smart Cache</span>
+            </div>
+
+            <!-- PHYSICAL CORES MATRIX -->
+            <div class="silicon-die-grid" id="silicon-cores-grid">
+              <!-- Dynamically populated with physical cores and logical execution threads -->
+            </div>
+
+            <!-- SHARED L3 CACHE INTERCONNECT BUS -->
+            <div class="interconnect-bus">
+              <div class="bus-label">HIGH-SPEED RING BUS / UNIFIED L3 CACHE INTERCONNECT</div>
+              <div class="bus-activity" id="bus-animation"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SYSTEM BUS & KERNEL ARCHITECTURE GRID -->
+      <div class="grid-3-cards">
+        <!-- Kernel Scheduler -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span class="dot-accent"></span>
+              Kernel Pipeline & Scheduling
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="twin-stat-item">
+              <span class="twin-lbl">OS Kernel Scheduler</span>
+              <span class="twin-val">Windows NT Preemptive</span>
+            </div>
+            <div class="twin-stat-item">
+              <span class="twin-lbl">Context Switches / Sec</span>
+              <span class="twin-val text-cyan" id="twin-ctx-switches">0 /s</span>
+            </div>
+            <div class="twin-stat-item">
+              <span class="twin-lbl">Hardware Interrupts / Sec</span>
+              <span class="twin-val text-purple" id="twin-interrupts">0 /s</span>
+            </div>
+            <div class="twin-stat-item">
+              <span class="twin-lbl">Active Thread Dispatch</span>
+              <span class="twin-val text-emerald" id="twin-active-threads">0 Threads</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Memory Bus -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span class="dot-accent"></span>
+              Memory Bus Architecture
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="twin-stat-item">
+              <span class="twin-lbl">Bus Channels</span>
+              <span class="twin-val">High-Speed Dual-Channel</span>
+            </div>
+            <div class="twin-stat-item">
+              <span class="twin-lbl">Physical Memory Pool</span>
+              <span class="twin-val text-cyan" id="twin-ram-total">0.0 GB</span>
+            </div>
+            <div class="twin-stat-item">
+              <span class="twin-lbl">Active Virtual Swap</span>
+              <span class="twin-val text-amber" id="twin-swap-used">0.0 GB</span>
+            </div>
+            <div class="twin-stat-item">
+              <span class="twin-lbl">Bus Utilization Ratio</span>
+              <span class="twin-val text-emerald" id="twin-ram-pct">0%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Storage & PCIe Bus -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span class="dot-accent"></span>
+              Storage & I/O Bus Controller
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="twin-stat-item">
+              <span class="twin-lbl">Primary Storage Bus</span>
+              <span class="twin-val">Direct NVMe / SATA PCIe</span>
+            </div>
+            <div class="twin-stat-item">
+              <span class="twin-lbl">Mounted Partitions</span>
+              <span class="twin-val text-cyan" id="twin-disk-count">0 Drives</span>
+            </div>
+            <div class="twin-stat-item">
+              <span class="twin-lbl">Network Controller Link</span>
+              <span class="twin-val text-emerald" id="twin-nic-speed">Auto Speed</span>
+            </div>
+            <div class="twin-stat-item">
+              <span class="twin-lbl">Duplex Mode</span>
+              <span class="twin-val text-purple" id="twin-nic-duplex">Full Duplex</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LAYERED ARCHITECTURE EXPLANATION MAP -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span class="dot-accent"></span>
+            Software Medium to Hardware Execution Flow (How It Works)
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="layer-diagram">
+            <div class="layer-step layer-app">
+              <div class="layer-tag">LAYER 3: USER SPACE</div>
+              <div class="layer-name">User Applications & Games</div>
+              <div class="layer-desc">Browser, Discord, Python, Games request computation through Windows APIs.</div>
+            </div>
+            <div class="layer-arrow">&darr;</div>
+            <div class="layer-step layer-kernel">
+              <div class="layer-tag">LAYER 2: KERNEL SPACE</div>
+              <div class="layer-name">Windows NT Kernel & Thread Scheduler</div>
+              <div class="layer-desc">Distributes task threads across logical CPU cores, handles interrupts & context switches.</div>
+            </div>
+            <div class="layer-arrow">&darr;</div>
+            <div class="layer-step layer-hardware">
+              <div class="layer-tag">LAYER 1: PHYSICAL HARDWARE</div>
+              <div class="layer-name">Silicon CPU Execution Units (ALU / FPU / Caches)</div>
+              <div class="layer-desc">Transistors switch states billions of times per second to execute machine instructions.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 4: CPU CORES ==================== -->
+    <section class="tab-content" id="tab-cores">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span class="dot-accent"></span>
+            Multi-Core Telemetry Matrix
+          </div>
+          <div class="panel-actions">
+            <span class="badge-status status-info" id="cores-count-badge">0 Cores Detected</span>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="cores-matrix-grid" id="cores-grid">
+            <!-- Dynamic cores injected here -->
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span class="dot-accent"></span>
+            Per-Core Load Distribution Comparison
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="chart-box">
+            <canvas id="chart-cores-bar"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 5: PROCESSES ==================== -->
+    <section class="tab-content" id="tab-processes">
+      <div class="panel">
+        <div class="panel-header flex-between flex-wrap">
+          <div class="panel-title">
+            <span class="dot-accent"></span>
+            System Process Manager
+          </div>
+          <div class="proc-controls">
+            <div class="search-group">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="proc-search-input" class="search-input" placeholder="Search by name or PID...">
+            </div>
+            <div class="select-group">
+              <span class="select-label">Sort:</span>
+              <select id="proc-sort-select" class="custom-select">
+                <option value="cpu" selected>CPU Usage</option>
+                <option value="mem">Memory Usage</option>
+                <option value="pid">PID</option>
+                <option value="name">Process Name</option>
+              </select>
+            </div>
+            <button class="btn btn-sm btn-primary" id="btn-refresh-procs">
+              <span>↻ Refresh</span>
+            </button>
+          </div>
+        </div>
+        <div class="panel-body no-padding">
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 80px;">PID</th>
+                  <th>PROCESS NAME</th>
+                  <th style="width: 220px;">CPU UTILIZATION</th>
+                  <th style="width: 220px;">MEMORY (RAM)</th>
+                  <th style="width: 100px;">THREADS</th>
+                  <th style="width: 110px;">STATUS</th>
+                  <th style="width: 90px; text-align: center;">ACTION</th>
+                </tr>
+              </thead>
+              <tbody id="proc-table-body">
+                <tr><td colspan="7" class="text-center py-4">Gathering active processes...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 6: MEMORY & STORAGE ==================== -->
+    <section class="tab-content" id="tab-memory">
+      <div class="grid-2-equal">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span class="dot-accent"></span>
+              Physical Memory (RAM) Analysis
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="mem-spec-grid">
+              <div class="mem-item">
+                <span class="mem-lbl">Total Capacity</span>
+                <span class="mem-val" id="mem-total">0.0 GB</span>
+              </div>
+              <div class="mem-item">
+                <span class="mem-lbl">In Use</span>
+                <span class="mem-val text-cyan" id="mem-used">0.0 GB</span>
+              </div>
+              <div class="mem-item">
+                <span class="mem-lbl">Available</span>
+                <span class="mem-val text-emerald" id="mem-avail">0.0 GB</span>
+              </div>
+              <div class="mem-item">
+                <span class="mem-lbl">Swap Usage</span>
+                <span class="mem-val text-amber" id="swap-val">0.0%</span>
+              </div>
+            </div>
+
+            <div class="spacer-md"></div>
+            <div class="panel-sub-title">Detailed RAM Consumption Bar</div>
+            <div class="composite-progress">
+              <div class="comp-fill comp-used" id="bar-mem-used" style="width: 0%"></div>
+              <div class="comp-fill comp-free" id="bar-mem-free" style="width: 100%"></div>
+            </div>
+            <div class="comp-labels">
+              <span><span class="color-dot bg-cyan"></span> Used Memory</span>
+              <span><span class="color-dot bg-dark"></span> Available Memory</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span class="dot-accent"></span>
+              Storage Partitions & Mount Points
+            </div>
+          </div>
+          <div class="panel-body">
+            <div id="full-disk-list" class="disk-table-container">
+              <div class="empty-state">Loading partition table...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 7: ALERTS ==================== -->
+    <section class="tab-content" id="tab-alerts">
+      <div class="panel">
+        <div class="panel-header flex-between flex-wrap">
+          <div class="panel-title">
+            <span class="dot-accent"></span>
+            System Health & Event Log
+          </div>
+          <div class="proc-controls">
+            <select id="alert-filter-select" class="custom-select">
+              <option value="all">All Levels</option>
+              <option value="critical">Critical Only</option>
+              <option value="warning">Warnings Only</option>
+              <option value="info">Info / Success</option>
+            </select>
+            <button class="btn btn-sm btn-danger" id="btn-clear-alerts">
+              <span>🗑 Clear All Events</span>
+            </button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div id="alerts-list" class="alerts-feed">
+            <div class="empty-state">No active alert events. System is healthy.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 8: HISTORY & STATS ==================== -->
+    <section class="tab-content" id="tab-history">
+      <div class="grid-2-equal">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span class="dot-accent"></span>
+              Statistical Session Analytics
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="stats-list" id="stats-summary-list">
+              <div class="stat-row">
+                <span class="stat-name">Average CPU Utilization</span>
+                <span class="stat-num" id="stat-avg">0.0%</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-name">Peak CPU Spike</span>
+                <span class="stat-num text-crimson" id="stat-peak">0.0%</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-name">Minimum Recorded Load</span>
+                <span class="stat-num text-emerald" id="stat-min">0.0%</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-name">Standard Deviation (σ)</span>
+                <span class="stat-num" id="stat-std">0.00</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-name">Collected Data Samples</span>
+                <span class="stat-num" id="stat-samples">0</span>
+              </div>
+            </div>
+
+            <div class="spacer-md"></div>
+            <a href="/api/export-csv" class="btn btn-primary btn-block">
+              <span>⬇ Download Full Session Data (CSV)</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span class="dot-accent"></span>
+              AI Anomaly & Spike Detections (Z-Score &gt; 2.6)
+            </div>
+          </div>
+          <div class="panel-body">
+            <div id="anomaly-items-list" class="anomalies-list">
+              <div class="empty-state">No sudden anomalies detected in this session.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 9: SETTINGS & INFO ==================== -->
+    <section class="tab-content" id="tab-settings">
+      <div class="grid-2-equal">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span class="dot-accent"></span>
+              Analyzer Configuration
+            </div>
+          </div>
+          <div class="panel-body">
+            <form id="settings-form">
+              <div class="form-group">
+                <label class="form-label" for="input-warn">CPU Warning Threshold (%)</label>
+                <div class="range-wrapper">
+                  <input type="range" id="input-warn" min="50" max="95" step="5" value="75">
+                  <span class="range-val" id="val-slider-warn">75%</span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="input-crit">CPU Critical Threshold (%)</label>
+                <div class="range-wrapper">
+                  <input type="range" id="input-crit" min="60" max="99" step="5" value="90">
+                  <span class="range-val" id="val-slider-crit">90%</span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="select-refresh">Telemetry Refresh Interval</label>
+                <select id="select-refresh" class="custom-select full-width">
+                  <option value="500">500 ms (Ultra High Performance)</option>
+                  <option value="1000" selected>1000 ms (Recommended Standard)</option>
+                  <option value="2000">2000 ms (Low Resource Consumption)</option>
+                  <option value="5000">5000 ms (Battery Saver)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="check-sound" checked>
+                  <span>Play audio alert sound on Critical CPU spike</span>
+                </label>
+              </div>
+
+              <button type="submit" class="btn btn-primary">
+                <span>Save Configuration</span>
+              </button>
+              <span class="save-status" id="save-feedback" style="display:none;">Saved successfully!</span>
+            </form>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span class="dot-accent"></span>
+              Host System Diagnostic Information
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="sysinfo-table" id="sysinfo-content">
+              <div class="empty-state">Querying hardware environment...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MULTI-FORMAT REPORT EXPORT PANEL -->
+      <div class="panel" style="margin-top:20px;">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span class="dot-accent"></span>
+            Download Live Monitoring Report
+          </div>
+        </div>
+        <div class="panel-body">
+          <p style="color:var(--text-secondary);margin-bottom:16px;line-height:1.6;">
+            Export a real-time snapshot of your current monitoring session. All data is captured <strong>at this exact moment</strong> — CPU stats, memory, top processes, alerts, and history.
+          </p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">
+
+            <a href="/api/export-csv" class="report-card">
+              <div class="report-icon" style="background:linear-gradient(135deg,#22c55e,#16a34a);">&#x1F4CA;</div>
+              <div class="report-info">
+                <div class="report-format">CSV Format</div>
+                <div class="report-desc">Open in Excel or Google Sheets. Contains full timeline history with timestamps.</div>
+              </div>
+            </a>
+
+            <a href="/api/export-json" class="report-card">
+              <div class="report-icon" style="background:linear-gradient(135deg,#38bdf8,#0ea5e9);">&#x1F517;</div>
+              <div class="report-info">
+                <div class="report-format">JSON Format</div>
+                <div class="report-desc">Machine-readable full dump. Includes all metrics, processes, alerts, and history.</div>
+              </div>
+            </a>
+
+            <a href="/api/export-pdf-report" class="report-card">
+              <div class="report-icon" style="background:linear-gradient(135deg,#a855f7,#7c3aed);">&#x1F4C4;</div>
+              <div class="report-info">
+                <div class="report-format">PDF Report</div>
+                <div class="report-desc">Professional snapshot PDF. Tables for CPU, RAM, per-core, top 25 processes &amp; alerts.</div>
+              </div>
+            </a>
+
+          </div>
+          <p style="color:var(--text-muted,#555);font-size:11px;margin-top:14px;">
+            &#x26A1; Data is live — each download captures a fresh real-time snapshot from the monitoring engine.
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- CONFIRM KILL / COUNTERMEASURE MODAL -->
+  <div class="modal-backdrop" id="kill-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span class="modal-icon">⚠️</span>
+        <span class="modal-title" id="modal-title-text">Authorize Process Termination</span>
+      </div>
+      <div class="modal-body">
+        <p id="modal-desc-text">
+          Are you sure you want to terminate process <strong id="modal-proc-name"></strong> (PID: <span id="modal-proc-pid"></span>)?
+        </p>
+        <p class="modal-sub">This action will immediately stop execution and reclaim system resources.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="btn-cancel-kill">Cancel</button>
+        <button class="btn btn-danger" id="btn-confirm-kill">Authorize & Terminate</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="app-footer">
+    NEXUS CPU Analyzer &bull; Built with High Performance Python Telemetry Engine & Digital Twin Architecture &bull; Real-Time System Intelligence
+  </footer>
+
+  <!-- Script -->
+  <script src="/static/script.js"></script>
+</body>
+</html>

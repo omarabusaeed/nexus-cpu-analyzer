@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NEXUS CPU Analyzer — Real-Time System Monitor</title>
+  <style>
+    :root {
+      --purple: #a855f7;
+      --purple-dark: #7c3aed;
+      --blue: #38bdf8;
+      --emerald: #22c55e;
+      --bg: #0f0d1a;
+      --panel: #1a1730;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif; line-height:1.6; }
+
+    /* NAV */
+    nav { display:flex; justify-content:space-between; align-items:center; padding:18px 60px; border-bottom:1px solid rgba(168,85,247,0.15); position:sticky; top:0; background:rgba(15,13,26,0.95); backdrop-filter:blur(12px); z-index:100; }
+    .logo { font-size:20px; font-weight:800; background:linear-gradient(135deg,#a855f7,#38bdf8); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .nav-links { display:flex; gap:28px; }
+    .nav-links a { color:var(--muted); text-decoration:none; font-size:14px; transition:color 0.2s; }
+    .nav-links a:hover { color:var(--purple); }
+    .nav-cta { background:linear-gradient(135deg,#a855f7,#7c3aed); color:#fff; padding:9px 22px; border-radius:8px; text-decoration:none; font-weight:600; font-size:14px; transition:opacity 0.2s; }
+    .nav-cta:hover { opacity:0.85; }
+
+    /* HERO */
+    .hero { text-align:center; padding:100px 20px 80px; position:relative; overflow:hidden; }
+    .hero::before { content:''; position:absolute; top:-200px; left:50%; transform:translateX(-50%); width:800px; height:800px; background:radial-gradient(circle, rgba(168,85,247,0.12) 0%, transparent 70%); pointer-events:none; }
+    .badge { display:inline-block; background:rgba(168,85,247,0.15); border:1px solid rgba(168,85,247,0.3); color:var(--purple); padding:6px 16px; border-radius:999px; font-size:13px; font-weight:600; margin-bottom:24px; }
+    .hero h1 { font-size:clamp(36px,6vw,72px); font-weight:900; line-height:1.1; margin-bottom:20px; }
+    .hero h1 span { background:linear-gradient(135deg,#a855f7,#38bdf8); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .hero p { font-size:18px; color:var(--muted); max-width:600px; margin:0 auto 40px; }
+    .hero-btns { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
+    .btn-hero { display:inline-flex; align-items:center; gap:8px; padding:14px 32px; border-radius:10px; font-weight:700; font-size:16px; text-decoration:none; transition:all 0.2s; }
+    .btn-primary { background:linear-gradient(135deg,#a855f7,#7c3aed); color:#fff; box-shadow:0 0 32px rgba(168,85,247,0.4); }
+    .btn-primary:hover { transform:translateY(-2px); box-shadow:0 0 48px rgba(168,85,247,0.6); }
+    .btn-secondary { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); color:var(--text); }
+    .btn-secondary:hover { background:rgba(255,255,255,0.1); }
+
+    /* STATS STRIP */
+    .stats-strip { display:flex; justify-content:center; gap:60px; padding:32px 20px; border-top:1px solid rgba(255,255,255,0.06); border-bottom:1px solid rgba(255,255,255,0.06); flex-wrap:wrap; }
+    .stat { text-align:center; }
+    .stat-num { font-size:32px; font-weight:900; color:var(--purple); }
+    .stat-label { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+
+    /* FEATURES */
+    .section { padding:80px 20px; max-width:1100px; margin:0 auto; }
+    .section-label { text-align:center; color:var(--purple); font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:2px; margin-bottom:12px; }
+    .section-title { text-align:center; font-size:clamp(28px,4vw,44px); font-weight:900; margin-bottom:16px; }
+    .section-sub { text-align:center; color:var(--muted); font-size:16px; max-width:560px; margin:0 auto 56px; }
+    .features-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:20px; }
+    .feature-card { background:var(--panel); border:1px solid rgba(168,85,247,0.15); border-radius:16px; padding:28px; transition:all 0.3s; }
+    .feature-card:hover { border-color:rgba(168,85,247,0.4); transform:translateY(-4px); box-shadow:0 16px 48px rgba(168,85,247,0.1); }
+    .feature-icon { font-size:32px; margin-bottom:14px; }
+    .feature-title { font-size:17px; font-weight:700; margin-bottom:8px; }
+    .feature-desc { color:var(--muted); font-size:14px; line-height:1.6; }
+
+    /* HOW IT WORKS */
+    .how-section { background:var(--panel); padding:80px 20px; border-top:1px solid rgba(255,255,255,0.06); border-bottom:1px solid rgba(255,255,255,0.06); }
+    .steps { display:flex; justify-content:center; gap:0; max-width:900px; margin:0 auto; flex-wrap:wrap; }
+    .step { flex:1; min-width:200px; text-align:center; padding:20px; position:relative; }
+    .step:not(:last-child)::after { content:'→'; position:absolute; right:-10px; top:30px; color:var(--purple); font-size:24px; }
+    .step-num { width:52px; height:52px; background:linear-gradient(135deg,#a855f7,#7c3aed); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:900; margin:0 auto 14px; }
+    .step-title { font-weight:700; margin-bottom:6px; }
+    .step-desc { color:var(--muted); font-size:13px; }
+
+    /* TECH STACK */
+    .tech-grid { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-top:32px; }
+    .tech-pill { background:rgba(168,85,247,0.1); border:1px solid rgba(168,85,247,0.25); padding:8px 18px; border-radius:999px; font-size:13px; font-weight:600; color:var(--purple); }
+
+    /* DOWNLOAD SECTION */
+    .download-section { text-align:center; padding:100px 20px; position:relative; overflow:hidden; }
+    .download-section::before { content:''; position:absolute; bottom:-100px; left:50%; transform:translateX(-50%); width:600px; height:600px; background:radial-gradient(circle, rgba(168,85,247,0.1) 0%, transparent 70%); pointer-events:none; }
+    .download-card { display:inline-block; background:var(--panel); border:1px solid rgba(168,85,247,0.3); border-radius:20px; padding:48px 60px; max-width:560px; box-shadow:0 0 80px rgba(168,85,247,0.1); }
+    .download-title { font-size:28px; font-weight:900; margin-bottom:10px; }
+    .download-sub { color:var(--muted); margin-bottom:28px; font-size:15px; }
+    .os-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); padding:6px 14px; border-radius:999px; font-size:12px; color:var(--muted); margin-bottom:24px; }
+    .file-info { font-size:12px; color:var(--muted); margin-top:14px; }
+
+    /* FOOTER */
+    footer { text-align:center; padding:40px 20px; border-top:1px solid rgba(255,255,255,0.06); color:var(--muted); font-size:13px; }
+    footer a { color:var(--purple); text-decoration:none; }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav>
+  <div class="logo">⚡ NEXUS</div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#how">How It Works</a>
+    <a href="#stack">Tech Stack</a>
+    <a href="#download">Download</a>
+  </div>
+  <a href="#download" class="nav-cta">⬇ Download Free</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="badge">⚡ Real-Time System Intelligence</div>
+  <h1>Your PC's <span>Mission Control</span><br/>Dashboard</h1>
+  <p>Monitor CPU, RAM, processes, and network in real-time with AI-powered anomaly detection and smart countermeasures. Free. Local. Fast.</p>
+  <div class="hero-btns">
+    <a href="#download" class="btn-hero btn-primary">⬇ Download for Windows</a>
+    <a href="https://github.com/YOUR_USERNAME/nexus-cpu-analyzer" class="btn-hero btn-secondary">⭐ View on GitHub</a>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats-strip">
+  <div class="stat"><div class="stat-num">9</div><div class="stat-label">Dashboard Tabs</div></div>
+  <div class="stat"><div class="stat-num">1s</div><div class="stat-label">Refresh Rate</div></div>
+  <div class="stat"><div class="stat-num">19</div><div class="stat-label">API Endpoints</div></div>
+  <div class="stat"><div class="stat-num">0</div><div class="stat-label">Cloud Dependency</div></div>
+  <div class="stat"><div class="stat-num">100%</div><div class="stat-label">Private & Local</div></div>
+</div>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <div class="section-label">What You Get</div>
+  <h2 class="section-title">Everything your Task Manager isn't</h2>
+  <p class="section-sub">NEXUS gives you professional-grade system telemetry right in your browser — no cloud, no subscriptions, no nonsense.</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <div class="feature-title">Live CPU Charts</div>
+      <div class="feature-desc">Real-time line charts for overall CPU + per-core breakdown. 5 minutes of rolling history. Z-score anomaly spike detection.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🧠</div>
+      <div class="feature-title">Smart Countermeasures</div>
+      <div class="feature-desc">AI engine detects rogue processes hogging your CPU in the background. One click to terminate with your permission.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔬</div>
+      <div class="feature-title">Process Manager</div>
+      <div class="feature-desc">Full process table with search, sort, and filter. See every running app's CPU%, RAM, status, and user. Kill with BSOD protection.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🖥️</div>
+      <div class="feature-title">Hardware Digital Twin</div>
+      <div class="feature-desc">Complete software representation of your hardware — CPU model, cores, frequency, RAM slots, all disks, network adapters.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🌐</div>
+      <div class="feature-title">Network Monitor</div>
+      <div class="feature-desc">Real-time upload and download speed charts. Total bytes sent/received. Live network interface stats.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📄</div>
+      <div class="feature-title">Multi-Format Export</div>
+      <div class="feature-desc">Download live session snapshots as CSV (Excel), JSON, or a professional PDF report — anytime, one click.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔔</div>
+      <div class="feature-title">Smart Alert System</div>
+      <div class="feature-desc">Configurable CPU warning and critical thresholds. Audio alerts on spikes. Full alert history log with levels.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🛡️</div>
+      <div class="feature-title">100% Private & Local</div>
+      <div class="feature-desc">Runs entirely on your machine. No data sent to any server. No internet required. Your stats stay yours.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-title">Blazing Fast UI</div>
+      <div class="feature-desc">Instant tab switching (0ms). Glassmorphism dark theme. Responsive design. Built with Vanilla JS — no bloat.</div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<div class="how-section" id="how">
+  <div class="section-label" style="text-align:center;">Simple Setup</div>
+  <h2 class="section-title" style="text-align:center;margin-bottom:48px;">Up and running in 30 seconds</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-title">Download</div>
+      <div class="step-desc">Get NEXUS_CPU_Analyzer.exe — single file, no installer needed</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-title">Run</div>
+      <div class="step-desc">Double-click the .exe — a terminal window opens and starts the engine</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-title">Monitor</div>
+      <div class="step-desc">Browser auto-opens at localhost:8050 — your dashboard is live!</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-title">Stop</div>
+      <div class="step-desc">Close the terminal window to stop NEXUS completely</div>
+    </div>
+  </div>
+</div>
+
+<!-- TECH STACK -->
+<section class="section" id="stack">
+  <div class="section-label">Built With</div>
+  <h2 class="section-title">Professional Tech Stack</h2>
+  <p class="section-sub">No Electron bloat. No heavy frameworks. Just clean Python and Vanilla JS delivering maximum performance.</p>
+  <div class="tech-grid">
+    <span class="tech-pill">Python 3.11</span>
+    <span class="tech-pill">Flask 3.x</span>
+    <span class="tech-pill">psutil</span>
+    <span class="tech-pill">ReportLab</span>
+    <span class="tech-pill">Vanilla JS ES6+</span>
+    <span class="tech-pill">Chart.js 4.4</span>
+    <span class="tech-pill">CSS3 Glassmorphism</span>
+    <span class="tech-pill">REST API</span>
+    <span class="tech-pill">Daemon Threads</span>
+    <span class="tech-pill">Z-Score Anomaly Detection</span>
+    <span class="tech-pill">Circular Buffer</span>
+    <span class="tech-pill">PyInstaller</span>
+  </div>
+</section>
+
+<!-- DOWNLOAD -->
+<section class="download-section" id="download">
+  <div class="download-card">
+    <div class="download-title">⬇ Download NEXUS</div>
+    <div class="download-sub">Free forever. No account. No cloud. Just your machine, monitored like a pro.</div>
+    <div class="os-badge">🪟 Windows 10 / 11 — 64-bit</div>
+    <br/>
+    <a href="NEXUS_CPU_Analyzer.exe" class="btn-hero btn-primary" download>
+      ⬇ Download NEXUS_CPU_Analyzer.exe
+    </a>
+    <div class="file-info">~20 MB &nbsp;•&nbsp; No installation required &nbsp;•&nbsp; No Python needed</div>
+    <div style="margin-top:28px; padding-top:24px; border-top:1px solid rgba(255,255,255,0.08); font-size:13px; color:var(--muted);">
+      Or run from source:
+      <code style="background:rgba(168,85,247,0.1);padding:4px 10px;border-radius:6px;color:var(--purple);font-family:monospace;">python app.py</code>
+      &nbsp;→&nbsp;
+      <a href="https://github.com/YOUR_USERNAME/nexus-cpu-analyzer" style="color:var(--blue);">GitHub →</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>NEXUS CPU Analyzer &bull; Open Source &bull; Built with Python + Flask + Vanilla JS</p>
+  <p style="margin-top:8px;">
+    <a href="https://github.com/YOUR_USERNAME/nexus-cpu-analyzer">GitHub</a>
+    &nbsp;&bull;&nbsp;
+    <a href="https://github.com/YOUR_USERNAME/nexus-cpu-analyzer/issues">Report a Bug</a>
+    &nbsp;&bull;&nbsp;
+    <a href="https://github.com/YOUR_USERNAME/nexus-cpu-analyzer/blob/main/README.md">Docs</a>
+  </p>
+</footer>
+
+</body>
+</html>
+

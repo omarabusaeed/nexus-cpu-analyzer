@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+env/
+.venv/
+
+# Personal PDFs — do not publish
+NEXUS_CPU_Analyzer_Complete_Interview_Guide.pdf
+generate_interview_pdf.py
+
+# Logs & temp
+err.log
+*.log
+*.tmp
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# VS Code / IDE
+.vscode/
+.idea/
+
+# Vercel
+.vercel/
+
+# Exported reports (generated at runtime)
+nexus_report_*.json
+nexus_cpu_report_*.csv
+nexus_snapshot_*.pdf
+
