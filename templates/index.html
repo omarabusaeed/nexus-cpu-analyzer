@@ -126,6 +126,20 @@
     <!-- ==================== TAB 1: DASHBOARD ==================== -->
     <section class="tab-content active" id="tab-dashboard">
       
+      <!-- DESKTOP APP DOWNLOAD CALLOUT BANNER -->
+      <div class="product-download-banner" style="background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(56,189,248,0.12)); border: 1px solid rgba(168,85,247,0.45); border-radius: 12px; padding: 14px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <span style="font-size: 28px;">💻</span>
+          <div>
+            <div style="font-weight: 700; font-size: 14px; color: #f8fafc;">Monitor Your Own PC in Real-Time!</div>
+            <div style="font-size: 12px; color: #94a3b8;">This public site shows a live cloud demo. To monitor your own CPU, RAM, and processes locally with 100% privacy, download the Windows App.</div>
+          </div>
+        </div>
+        <a href="https://github.com/omarabusaeed/nexus-cpu-analyzer/releases/download/v1.0.0/NEXUS_CPU_Analyzer.exe" target="_blank" class="btn btn-primary" style="background: linear-gradient(135deg,#a855f7,#7c3aed); text-decoration: none; font-weight: 700; padding: 9px 20px; border-radius: 8px; white-space: nowrap; box-shadow: 0 4px 16px rgba(168,85,247,0.4); color: #fff;">
+          <span>&#x2B07; Download NEXUS.exe (11.7 MB)</span>
+        </a>
+      </div>
+
       <!-- DYNAMIC COUNTERMEASURE ALERT BANNER -->
       <div id="hog-alert-banner" class="emergency-banner" style="display: none;">
         <div class="banner-left">
@@ -872,6 +886,14 @@
               <div class="report-info">
                 <div class="report-format">PDF Report</div>
                 <div class="report-desc">Professional snapshot PDF. Tables for CPU, RAM, per-core, top 25 processes &amp; alerts.</div>
+              </div>
+            </a>
+
+            <a href="https://github.com/omarabusaeed/nexus-cpu-analyzer/releases/download/v1.0.0/NEXUS_CPU_Analyzer.exe" target="_blank" class="report-card" style="border-color: rgba(168,85,247,0.6); background: rgba(168,85,247,0.14);">
+              <div class="report-icon" style="background:linear-gradient(135deg,#a855f7,#7c3aed);">&#x1F4BB;</div>
+              <div class="report-info">
+                <div class="report-format" style="color:#38bdf8;">Windows App (.exe)</div>
+                <div class="report-desc">Standalone 11.7 MB client to monitor your own machine locally with zero Python setup.</div>
               </div>
             </a>
 
