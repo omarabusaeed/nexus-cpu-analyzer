@@ -9,13 +9,17 @@ import statistics
 import threading
 import time
 import psutil
-from flask import Flask, jsonify, render_template, request, Response, send_file
+from flask import Flask, jsonify, render_template, request, Response, send_file, send_from_directory
 
 # ── PyInstaller bundle path support ───────────────────────────────
 _template_dir = os.environ.get('NEXUS_TEMPLATE_DIR', os.path.join(os.path.dirname(__file__), 'templates'))
 _static_dir   = os.environ.get('NEXUS_STATIC_DIR',   os.path.join(os.path.dirname(__file__), 'static'))
 
 app = Flask(__name__, template_folder=_template_dir, static_folder=_static_dir)
+
+@app.route('/static/<path:filename>')
+def custom_static(filename):
+    return send_from_directory(_static_dir, filename)
 
 # Constants
 MAX_HISTORY = 300
